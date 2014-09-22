@@ -5,7 +5,6 @@
  * @link     http://k1ngdom.net
  */
 
-
 class confidentCaptcha {
     public $newImageFolder;
     private $tmpImage;
@@ -30,7 +29,7 @@ class confidentCaptcha {
         $this->savekeywords = $this->keywords;
 
         $this->PHasher = PHasher::Instance();
-        $tmp = time().rand().rand();
+        $tmp = uniqid(time());
         $this->newImageFolder = $newImageFolder . DIRECTORY_SEPARATOR . $tmp;
         $this->tmpImage = $tmpfolder . DIRECTORY_SEPARATOR . $tmp.'.jpg';
         $this->dbfolder = dirname(__DIR__) . '/db';
@@ -45,6 +44,7 @@ class confidentCaptcha {
 
     public function crack() {
         $captchaCode = array('', '', '', '');
+        $solvedImages = [];
         $i = 0;
 
         $images = glob($this->newImageFolder .'/*.jpg');
@@ -67,18 +67,21 @@ class confidentCaptcha {
                 }
 
                 $this->log("Hash Found: {$matchResult['hash']}, Keyword: {$matchResult['keyword']}, Letter: {$matchResult['letter']}, %: {$matchResult['percent']} {$msg}");
-            } else {
-                // $this->log("Hash UnFound: {$matchResult['hash']}, Letter: {$matchResult['letter']}");
             }
         }
+
         $this->log("-------------------------------\r\n", false);
+
+
         $this->autoSolvedLetters = $captchaCode;
         $solved = implode('', $captchaCode);
         $this->log("RESULT: ". $solved);
-        if (strlen($solved) < 4) {
+        if (strlen($solved) < 4) { // captcha failed to solve. keep the images and save question.
             $this->log('No solution');
+            $this->RemoveSolvedImages(); // remove solved images.
             return false;
-        } else {
+        } else { // captcha has been solved.
+            $this->rmdir($this->newImageFolder); // remove all images
             return $solved;
         }
     }
@@ -159,16 +162,24 @@ class confidentCaptcha {
             $count++;
         }
 
+        $this->rmdir($this->newImageFolder);
         return $count;
+    }
+
+    public function RemoveSolvedImages() {
+        $images = glob(sprintf("%s/{*%s}.jpg", $this->newImageFolder, implode(',*', $this->autoSolvedLetters)), GLOB_BRACE);
+        foreach ($images as $image) {
+            @unlink($image);
+        }
+        @file_put_contents($this->newImageFolder . '/question.txt', implode(', ', $this->keywords));
     }
 
     public function result() {
 
     }
 
-    public function distroy() {
+    public function destroy() {
         @unlink($this->tmpImage);
-        $this->rmdir($this->newImageFolder);
     }
 
 
@@ -192,7 +203,7 @@ class confidentCaptcha {
 
     public function saveLog() {
         if ($this->logfile !== false) {
-            file_put_contents($this->logfile, implode('', $this->logs), FILE_APPEND|LOCK_EX);
+            file_put_contents($this->logfile, implode('', $this->logs), FILE_APPEND);
         } else {
             echo implode('', $this->logs);
         }

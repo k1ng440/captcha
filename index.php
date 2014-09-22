@@ -29,14 +29,14 @@ if ($letters === false || $words === false || $image === false) {
 }
 
 $client = new Predis\Client(['timeout' => 0.5]);
-// try {
-//     if ($client->exists($_POST['licenseKey']) === false) {
-//         echo json_encode(array('success' => false, 'result' => 'Access Denied'));
-//         exit;
-//     }
-// } catch (Predis\Connection\ConnectionException $e) {
-//     // trigger_error("Captcha Breaker: cannot connect to Radis Server", E_USER_ERROR);
-// }
+try {
+    if ($client->exists($_POST['licenseKey']) === false) {
+        echo json_encode(array('success' => false, 'result' => 'Access Denied'));
+        exit;
+    }
+} catch (Predis\Connection\ConnectionException $e) {
+    // trigger_error("Captcha Breaker: cannot connect to Radis Server", E_USER_ERROR);
+}
 
 $dist = true;
 $confident = new confidentCaptcha(dirname(__file__). '/newimages', dirname(__file__). '/tmp', $image, $words, $letters);
@@ -67,8 +67,12 @@ if ($solvedLetters !== false && strlen($solvedLetters) == 4) {
     }
 }
 
+@ob_flush();
+@flush();
+
+
 $confident->saveLog();
 
 if ($dist === true) {
-    $confident->distroy();
+    $confident->destroy();
 }
