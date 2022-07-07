@@ -1,9 +1,4 @@
 <?php
-/**
- * @category PHP
- * @author   Steven King (info@k1ngdom.net) (skype: k1ngs.k1ngdom) (phone: +880 174 202 0548)
- * @link     http://k1ngdom.net
- */
 require_once 'class/phasher.class.php';
 $PHasher = PHasher::Instance();
 
